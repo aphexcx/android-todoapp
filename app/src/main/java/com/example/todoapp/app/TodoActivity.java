@@ -1,5 +1,6 @@
 package com.example.todoapp.app;
 
+import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import org.apache.commons.io.FileUtils;
 
 public class TodoActivity extends ActionBarActivity {
+    private static final int REQUEST_CODE = 20;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +40,7 @@ public class TodoActivity extends ActionBarActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        
+
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
@@ -66,6 +68,18 @@ public class TodoActivity extends ActionBarActivity {
         etNewItem.setText("");
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK && requestCode == REQUEST_CODE) {
+            PlaceholderFragment frag = (PlaceholderFragment) getSupportFragmentManager().findFragmentByTag("MainFragment");
+            int pos = data.getExtras().getInt("pos");
+            String text = data.getExtras().getString("text");
+            frag.setItem(pos, text);
+
+        }
+
+    }
+
     /**
      * A placeholder fragment containing a simple view.
      */
@@ -79,7 +93,7 @@ public class TodoActivity extends ActionBarActivity {
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                Bundle savedInstanceState) {
+                                 Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
             lvItems = (ListView) rootView.findViewById(R.id.lvItems);
             readItems();
@@ -99,9 +113,23 @@ public class TodoActivity extends ActionBarActivity {
                     return true;
                 }
             });
+
+            lvItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
+                    Intent intent = new Intent(TodoActivity.this, EditItemActivity.class);
+                    intent.putExtra("pos", i);
+                    intent.putExtra("text", todoItems.get(i));
+                    getActivity().startActivityForResult(intent, REQUEST_CODE);
+
+                    aTodoItems.notifyDataSetChanged();
+                    writeItems();
+                }
+            });
         }
 
-        private void readItems(){
+        private void readItems() {
             File filesDir = getFilesDir();
             File todoFile = new File(filesDir, "todo.txt");
             try {
@@ -112,7 +140,7 @@ public class TodoActivity extends ActionBarActivity {
 
         }
 
-        private void writeItems(){
+        private void writeItems() {
             File filesDir = getFilesDir();
             File todoFile = new File(filesDir, "todo.txt");
             try {
@@ -122,8 +150,14 @@ public class TodoActivity extends ActionBarActivity {
             }
         }
 
-        public void addItem(String itemText){
+        public void addItem(String itemText) {
             aTodoItems.add(itemText);
+        }
+
+        public void setItem(int pos, String itemText) {
+            todoItems.set(pos, itemText);
+            aTodoItems.notifyDataSetChanged();
+            writeItems();
         }
 
     }
